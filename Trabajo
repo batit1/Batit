@@ -1,0 +1,156 @@
+import math
+import random
+
+class Espacio:
+    def __init__(self, nombre, tamaño_x, tamaño_y):
+        self.nombre = nombre
+        self.tamaño_x = tamaño_x
+        self.tamaño_y = tamaño_y
+        self.lista_personas = []
+        self.monedas = self.generar_monedas()
+    
+    def generar_monedas(self, cantidad=10):
+        return [(random.randint(0, self.tamaño_x), random.randint(0, self.tamaño_y)) for _ in range(cantidad)]
+    
+    def añadir_persona(self, persona):
+        self.lista_personas.append(persona)
+        persona.espacio = self
+    
+    def remover_persona(self, persona):
+        if persona in self.lista_personas:
+            self.lista_personas.remove(persona)
+            persona.espacio = None
+            print(f"{persona.nombre} ha sido eliminado del espacio {self.nombre}.")
+    
+    def mover_persona(self, persona, x, y):
+        if persona in self.lista_personas:
+            persona.posicion = (x, y)
+            print(f"{persona.nombre} se ha movido a la posición ({x}, {y}) en {self.nombre}.")
+            self.recoger_moneda(persona)
+        else:
+            print(f"{persona.nombre} no está en {self.nombre}.")
+    
+    def recoger_moneda(self, persona):
+        if persona.posicion in self.monedas:
+            self.monedas.remove(persona.posicion)
+            persona.monedas += 1
+            print(f"{persona.nombre} ha recogido una moneda. Ahora tiene {persona.monedas} monedas.")
+    
+    def buscar_persona_por_nombre(self, nombre):
+        for persona in self.lista_personas:
+            if persona.nombre == nombre:
+                return persona
+        return None
+    
+    def listar_personas(self):
+        return ' '.join([persona.nombre for persona in self.lista_personas])
+
+    def obtener_personas_cercanas(self, persona, distancia):
+        return [otra_persona for otra_persona in self.lista_personas if otra_persona != persona and distancia_2d(persona, otra_persona) <= distancia]
+    
+    def calcular_persona_mas_cercana(self, persona):
+        personas = [otra_persona for otra_persona in self.lista_personas if otra_persona != persona]
+        return min(personas, key=lambda p: distancia_2d(persona, p), default=None)
+
+class Persona:
+    def __init__(self, nombre, año_nacimiento, apellido, edad, estatura, peso, pais_nacimiento, x, y, espacio):
+        self.nombre = nombre
+        self.año_nacimiento = año_nacimiento
+        self.apellido = apellido
+        self.edad = edad
+        self.estatura = estatura
+        self.peso = peso
+        self.pais_nacimiento = pais_nacimiento
+        self.posicion = (x, y)
+        self.espacio = None
+        self.monedas = 0
+        espacio.añadir_persona(self)
+    
+    def saludar(self):
+        print(f"Hola, me llamo {self.nombre} y tengo {self.edad} años")
+    
+    def presentar(self):
+        print(f"Nací en {self.año_nacimiento}, mido {self.estatura} y peso {self.peso}")
+
+    def nombre_completo(self):
+        print(f"Mi nombre completo es {self.nombre} {self.apellido}")
+
+    def pais_origen(self):
+        print(f"Vivo en {self.pais_nacimiento}")
+
+    def mover_a(self, x, y):
+        self.posicion = (x, y)
+        print(f"{self.nombre} se ha movido a la posición ({x}, {y}).")
+        if self.espacio:
+            self.espacio.recoger_moneda(self)
+
+    def hablar(self, con_quien, mensaje):
+        if con_quien in self.espacio.lista_personas:
+            print(f"{self.nombre} a {con_quien.nombre}: {mensaje}")
+        else:
+            print(f"{self.nombre} no puede hablar con {con_quien.nombre} porque no están en el mismo espacio.")
+    
+    def mover_hacia(self, otra_persona):
+        if otra_persona in self.espacio.lista_personas:
+            self.posicion = otra_persona.posicion
+            print(f"{self.nombre} se ha movido hacia {otra_persona.nombre} en {self.espacio.nombre}.")
+        else:
+            print(f"{self.nombre} no puede moverse hacia {otra_persona.nombre} porque están en espacios distintos.")
+    
+    def salir_del_espacio(self, nuevo_espacio):
+        if self.espacio:
+            print(f"{self.nombre} sale de {self.espacio.nombre} y entra en {nuevo_espacio.nombre}.")
+            self.espacio.remover_persona(self)
+            nuevo_espacio.añadir_persona(self)
+
+def distancia_2d(persona1, persona2):
+    x1, y1 = persona1.posicion
+    x2, y2 = persona2.posicion
+    return math.sqrt((x2 - x1)**2 + (y2 - y1)**2)
+
+espacio1 = Espacio("UAX Arapiles", 15, 20)
+espacio2 = Espacio("Uax Villanueva", 30, 50)
+
+personas = [
+    Persona("Paula", 2006, "Muñoz", 18, 1.60, 60, "España", 1, 1, espacio1),
+    Persona("Adriana", 2004, "Ortiz", 20, 1.65, 65, "España", 3, 3, espacio1),
+    Persona("Carlos", 1998, "Gomez", 26, 1.75, 70, "España", 5, 5, espacio1)
+]
+
+# Preguntar al usuario cuántos turnos quiere
+N = int(input("¿Cuántos turnos quieres para mover a las personas? "))
+
+# Simulación de movimiento y recolección de monedas
+for _ in range(N):
+    for persona in personas:
+        nueva_x = min(max(persona.posicion[0] + random.randint(-1, 1), 0), espacio1.tamaño_x)
+        nueva_y = min(max(persona.posicion[1] + random.randint(-1, 1), 0), espacio1.tamaño_y)
+        persona.mover_a(nueva_x, nueva_y)
+
+# Calcular distancias entre personas
+for p1 in personas:
+    for p2 in personas:
+        if p1 != p2:
+            distancia = distancia_2d(p1, p2)
+            print(f"Distancia entre {p1.nombre} y {p2.nombre}: {distancia}")
+            if distancia == 0:
+                print(f"{p1.nombre} y {p2.nombre} están en la misma posición.")
+
+# Ejemplo de interacción entre personas
+persona1 = personas[0]
+persona2 = personas[1]
+
+persona1.saludar()
+persona1.presentar()
+persona1.nombre_completo()
+persona1.pais_origen()
+persona1.mover_a(5, 10)
+persona2.mover_a(10, 70)
+
+persona1.hablar(persona2, "Hola, ¿cómo estás?")
+persona1.mover_hacia(persona2)
+persona1.salir_del_espacio(espacio2)
+
+# Mostrar las monedas recogidas por cada persona
+for persona in personas:
+    print(f"{persona.nombre} tiene {persona.monedas} monedas.")
